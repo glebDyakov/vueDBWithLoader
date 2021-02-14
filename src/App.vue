@@ -9,25 +9,33 @@
       </div>
       <button class="btn primary" :disabled="name.length === 0">Создать человека</button>
     </form>
-    <app-people-list @load="loadPeople" @remove="removePerson" :people="people"></app-people-list>
+    <div v-if="loading">
+        <app-loader></app-loader>
+    </div>
+    <div v-if="!loading">
+        <app-people-list  @load="loadPeople" @remove="removePerson" :people="people"></app-people-list>
+    </div>
   </div>  
 </template>
 
 <script>
 import AppPeopleList from './AppPeopleList.vue'
 import AppAlert from './AppAlert.vue'
+import AppLoader from './AppLoader.vue'
 import axios from 'axios'
 export default {
   data(){
     return {
       alert: null,
+      loading: false,
       name:'',
       people:[]
     }
   },
   components:{
     AppPeopleList,
-    AppAlert
+    AppAlert,
+    AppLoader
   },
   mounted(){
     this.loadPeople()
@@ -35,14 +43,21 @@ export default {
   methods:{
     async removePerson(id){
         try {
+            const name = this.people.find(person => person.id === id).firstName
             await axios.delete(`https://vue-with-http-116d6-default-rtdb.firebaseio.com/people/${id}.json`) 
             this.people = this.people.filter(person => person.id !== id)
+            this.alert = {
+                type: 'primary',
+                title: 'Успешно',
+                text: `Пользователь с именем ${name} был удалён`
+            }
         } catch (e) {
 
         }
     },
     async loadPeople(){
         try {
+            this.loading = true
             const {data} = await axios.get('https://vue-with-http-116d6-default-rtdb.firebaseio.com/people.json')
             if(!data){
                 throw new Error('Список людей пуст')
@@ -63,6 +78,7 @@ export default {
             })
             // this.people = result
             // console.log(result)
+            this.loading = false
         } catch (e) {
             console.log(e.message)
             this.alert = {
@@ -70,6 +86,7 @@ export default {
                 title: 'Ошибка!',
                 text: e.message
             }
+            this.loading = false
         }
     },
     async createPerson(){
