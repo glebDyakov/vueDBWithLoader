@@ -1,103 +1,23 @@
 <template>
-  <div class="container">
-    <app-alert @close="alert = null" alert="alert"></app-alert>
-    <form class="card">
-      <h2>Работа с базой данных</h2>
-      <div class="form-control">
-        <label for="name">Введите имя</label>
-        <input type="text" id="name" v-model.trim="name"/>
-      </div>
-      <button class="btn primary" :disabled="name.length === 0">Создать человека</button>
-    </form>
-    <app-people-list @load="loadPeople" @remove="removePerson" :people="people"></app-people-list>
-  </div>  
+    <div v-if="people.length !== 0">
+        <div class="card inline" v-for="person in people" :key="person.id">
+            <h3 :style="{color:'red'}">{{ person.firstName }}</h3>
+            <button class="btn danger" @click="$emit('remove', person.id)">Удалить</button>
+        </div>    
+    </div>
+    <div class="card center" v-else>
+        <h4 :style="{color:'red'}">Людей пока нет</h4>
+        <button @click="$emit('load')" class="btn">Загрузить список</button>
+    </div>
 </template>
-
 <script>
-import AppPeopleList from './AppPeopleList.vue'
-import AppAlert from './AppAlert.vue'
-import axios from 'axios'
-export default {
-  data(){
-    return {
-      alert: null,
-      name:'',
-      people:[]
+    export default {
+        emits:['load', 'remove'],
+        props:[
+            'people'
+        ]
     }
-  },
-  components:{
-    AppPeopleList,
-    AppAlert
-  },
-  mounted(){
-    this.loadPeople()
-  },
-  methods:{
-    async removePerson(id){
-        try {
-            await axios.delete(`https://vue-with-http-116d6-default-rtdb.firebaseio.com/people/${id}.json`) 
-            this.people = this.people.filter(person => person.id !== id)
-        } catch (e) {
-
-        }
-    },
-    async loadPeople(){
-        try {
-            const {data} = await axios.get('https://vue-with-http-116d6-default-rtdb.firebaseio.com/people.json')
-            if(!data){
-                throw new Error('Список людей пуст')
-            }
-            // const result = Object.keys(data).map(key => {
-            //     return {
-            //         id:key,
-            //         // firstName: data[key].firstName
-            //         ...data[key]
-            //     }
-            // })
-            this.people = Object.keys(data).map(key => {
-                return {
-                    id:key,
-                    // firstName: data[key].firstName
-                    ...data[key]
-                }
-            })
-            // this.people = result
-            // console.log(result)
-        } catch (e) {
-            console.log(e.message)
-            this.alert = {
-                type: 'danger',
-                title: 'Ошибка!',
-                text: e.message
-            }
-        }
-    },
-    async createPerson(){
-      //https://vue-with-http-116d6-default-rtdb.firebaseio.com/people.json
-      //https://vue-with-http-116d6-default-rtdb.firebaseio.com/
-      //this.name
-      const response = await fetch('https://vue-with-http-116d6-default-rtdb.firebaseio.com/people.json', {
-        method: 'POST',
-        headers:{
-          'Content-Type': 'application/json',
-
-        },
-        body: JSON.stringify({
-          firstName: this.name
-        })
-      })
-      const firebaseData = await response.json()
-      console.log(firebaseData)
-      this.people.push({
-          firstName: this.name,
-          id: firebaseData.name
-      })
-      this.name = ''
-    }
-  }
-}
 </script>
-
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
 
@@ -495,4 +415,11 @@ export default {
   .navbar-menu li a:hover, .navbar-menu li a.active {
       border-bottom: 2px solid #3eaf7c;
   }
+</style>
+<style scoped>
+    .inline{
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
 </style>
